@@ -1,55 +1,68 @@
 package ar.edu.uade.valentin_lanus.photofinder.ui.screens.photolist
 
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import ar.edu.uade.valentin_lanus.photofinder.Secrets
-import kotlinx.coroutines.launch
-import ar.edu.uade.valentin_lanus.photofinder.data.api.RetrofitInstance
 import ar.edu.uade.valentin_lanus.photofinder.data.model.Photo
+import ar.edu.uade.valentin_lanus.photofinder.data.repository.PhotoRepository
+import kotlinx.coroutines.launch
 
-class PhotoListViewModel : ViewModel(){
-    var images by mutableStateOf<List<Photo>>(emptyList())
-        private set
-
-    var isLoading by mutableStateOf(false)
+class PhotoListViewModel(
+    private val repository: PhotoRepository
+) : ViewModel() {
 
     private var currentQuery: String = ""
+    private var currentPage = 1
+    private var currentImages = mutableListOf<Photo>()
+    private var isRequestInProgress = false
 
-    fun fetchInitialImages(){
-        images = emptyList()
+    var uiState by mutableStateOf<PhotoListState>(PhotoListState.Loading)
+        private set
+
+    fun fetchInitialImages() {
         currentQuery = ""
-        loadMoreImages()
+        currentPage = 1
+        currentImages.clear()
+        loadImages()
     }
 
-    fun searchImages(query: String){
-        images = emptyList()
+    fun searchImages(query: String) {
         currentQuery = query
-        loadMoreImages()
+        currentPage = 1
+        currentImages.clear()
+        loadImages()
     }
 
-    fun loadMoreImages(){ // Carga de imagenes de 2 en 2 (infinito)
+    fun loadImages() {
+        if (isRequestInProgress) return
+        isRequestInProgress = true
+
         viewModelScope.launch {
-            isLoading = true
+            uiState = PhotoListState.Loading
             try {
                 val newImages = if (currentQuery.isBlank()) {
-                    RetrofitInstance.api.getRandomPhotos(count = 2, clientId = Secrets.unsplash_api) // Obetengo las fotos de la api
+                    repository.getRandomPhotos(10)
                 } else {
-                    val result = RetrofitInstance.api.searchPhotos(
-                        query = currentQuery,
-                        perpage = 2,
-                        clientId = Secrets.unsplash_api
-                    )
-                    result.results
+                    repository.searchPhotos(currentQuery).results
                 }
-                images = images + newImages
-            } catch (e: Exception){
-                Log.e("ImageVM", "Error: ${e.message}")
+
+                val uniqueImages = newImages.filterNot { new ->
+                    currentImages.any { existing -> existing.id == new.id }
+                }
+
+                currentImages.addAll(uniqueImages)
+
+                if (uniqueImages.isNotEmpty() && currentQuery.isNotBlank()){
+                    currentPage++
+                }
+
+                uiState = PhotoListState.Success(currentImages)
+            } catch (e: Exception) {
+                uiState = PhotoListState.Error("Error: ${e.localizedMessage}")
             }
-            isLoading = false
+            isRequestInProgress = false
         }
     }
 }

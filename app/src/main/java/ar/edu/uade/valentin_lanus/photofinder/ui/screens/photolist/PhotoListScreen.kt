@@ -7,15 +7,19 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
@@ -43,8 +47,72 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import ar.edu.uade.valentin_lanus.photofinder.Secrets
+import ar.edu.uade.valentin_lanus.photofinder.data.api.RetrofitInstance
+import ar.edu.uade.valentin_lanus.photofinder.data.repository.PhotoRepositoryImpl
 
 @Composable
+fun PhotoListScreen(
+    navController: NavHostController,
+    viewModel: PhotoListViewModel,
+    onLogout: () -> Unit
+){
+    val repository = remember {
+        PhotoRepositoryImpl(RetrofitInstance.api, Secrets.unsplash_api)
+    }
+
+    val viewModel = remember {
+        PhotoListViewModel(repository)
+    }
+
+    var searchQuery by remember { mutableStateOf("") }
+    val state = viewModel.uiState
+
+    LaunchedEffect(Unit) {
+        viewModel.fetchInitialImages()
+    }
+
+    Column (modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = {
+                searchQuery = it
+                viewModel.searchImages(searchQuery)
+            },
+            label = { Text("Buscar imagenes") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        when (state) {
+            is PhotoListState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+
+            is PhotoListState.Success -> {
+                val listState = rememberLazyGridState()
+                val photos = state.photos
+
+                LazyColumn(
+                    state = listState,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(photos){ photo ->
+                        PhotoItem(photo)
+                    }
+                }
+            }
+        }
+    }
+}
+/*
 fun PhotoListScreen(
     navController: NavHostController,
     viewModel: PhotoListViewModel,
@@ -176,4 +244,4 @@ fun PhotoListScreen(
             }
         }
     }
-}
+}*/
