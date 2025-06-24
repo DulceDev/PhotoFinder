@@ -13,7 +13,11 @@ class PhotoRepositoryImpl(
         return apiService.getRandomPhotos(count = count, clientId = clientId)
     }
 
-    override suspend fun searchPhotos(query: String): SearchResponse {
-        return apiService.searchPhotos(query = query, clientId = clientId)
+    override suspend fun searchPhotos(query: String, page: Int): SearchResponse {
+        return apiService.searchPhotos(
+            query = query,
+            perpage = 10,
+            page = page,
+            clientId = clientId)
     }
 }

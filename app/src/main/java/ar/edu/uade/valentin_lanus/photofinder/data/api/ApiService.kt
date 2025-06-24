@@ -15,7 +15,8 @@ interface ApiService {
     @GET("search/photos")
     suspend fun searchPhotos(
         @Query("query") query: String,
-        @Query("per_page") perpage: Int = 5,
+        @Query("per_page") perpage: Int = 10,
+        @Query("page") page: Int = 1,
         @Query("client_id") clientId: String
     ): SearchResponse
 }
