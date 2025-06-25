@@ -4,7 +4,5 @@ import ar.edu.uade.valentin_lanus.photofinder.data.model.Photo
 import ar.edu.uade.valentin_lanus.photofinder.data.model.SearchResponse
 
 interface PhotoRepository {
-    suspend fun getRandomPhotos(count: Int): List<Photo>
-    suspend fun searchPhotos(query: String): SearchResponse
-
+    suspend fun searchPhotos(query: String, page: Int, perPage: Int): SearchResponse
 }

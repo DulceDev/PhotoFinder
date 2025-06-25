@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
@@ -36,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberImagePainter
@@ -50,80 +52,36 @@ import androidx.navigation.NavHostController
 import ar.edu.uade.valentin_lanus.photofinder.Secrets
 import ar.edu.uade.valentin_lanus.photofinder.data.api.RetrofitInstance
 import ar.edu.uade.valentin_lanus.photofinder.data.repository.PhotoRepositoryImpl
+import ar.edu.uade.valentin_lanus.photofinder.ui.screens.photodetail.PhotoDetailViewModel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 
 @Composable
 fun PhotoListScreen(
     navController: NavHostController,
     viewModel: PhotoListViewModel,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    detailViewModel: PhotoDetailViewModel
 ){
-    val repository = remember {
-        PhotoRepositoryImpl(RetrofitInstance.api, Secrets.unsplash_api)
-    }
-
-    val viewModel = remember {
-        PhotoListViewModel(repository)
-    }
-
     var searchQuery by remember { mutableStateOf("") }
-    val state = viewModel.uiState
+    val uiState = viewModel.uiState
+    val gridState = rememberLazyGridState()
 
     LaunchedEffect(Unit) {
         viewModel.fetchInitialImages()
     }
 
-    Column (modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = {
-                searchQuery = it
-                viewModel.searchImages(searchQuery)
-            },
-            label = { Text("Buscar imagenes") },
-            modifier = Modifier.fillMaxWidth()
-        )
+    LaunchedEffect(gridState) {
+        snapshotFlow {  gridState.layoutInfo.visibleItemsInfo }
+            .collectLatest{ visibleItems ->
+                val totalItems = gridState.layoutInfo.totalItemsCount
+                val lastVisibleItem = visibleItems.lastOrNull()?.index ?: 0
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        when (state) {
-            is PhotoListState.Loading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
+                if (lastVisibleItem >= totalItems - 4 && !viewModel.isLoading() && !viewModel.isEndReached()) {
+                    viewModel.loadImages()
                 }
             }
-
-            is PhotoListState.Success -> {
-                val listState = rememberLazyGridState()
-                val photos = state.photos
-
-                LazyColumn(
-                    state = listState,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(photos){ photo ->
-                        PhotoItem(photo)
-                    }
-                }
-            }
-        }
-    }
-}
-/*
-fun PhotoListScreen(
-    navController: NavHostController,
-    viewModel: PhotoListViewModel,
-    onLogout: () -> Unit
-){
-    val images = viewModel.images
-    val isLoading = viewModel.isLoading
-    var searchQuery by remember { mutableStateOf("") }
-
-    LaunchedEffect(Unit) {
-        viewModel.fetchInitialImages()
     }
 
     Column(
@@ -135,7 +93,8 @@ fun PhotoListScreen(
                 )
             )
             .padding(16.dp)
-    ) {
+    ){
+        // header con buscador y logout
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -156,6 +115,7 @@ fun PhotoListScreen(
                 modifier = Modifier.weight(1f),
                 trailingIcon = {
                     IconButton(onClick = {
+                        // Busca imagenes
                         viewModel.searchImages(searchQuery)
                     }) {
                         Icon(Icons.Default.Search, contentDescription = "Buscar")
@@ -165,9 +125,8 @@ fun PhotoListScreen(
 
             IconButton(
                 onClick = onLogout,
-                modifier = Modifier
-                    .padding(start = 8.dp)
-            ) {
+                modifier = Modifier.padding(start = 8.dp)
+            ){
                 Icon(
                     imageVector = Icons.Default.ExitToApp,
                     contentDescription = "Cerrar Sesion",
@@ -176,72 +135,96 @@ fun PhotoListScreen(
             }
         }
 
-
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            itemsIndexed(images) { index, image ->
-                if (index >= images.lastIndex -1 && !isLoading) {
-                    LaunchedEffect(Unit) {
-                        viewModel.loadMoreImages()
-                    }
-                }
-
+        when (uiState) {
+            is PhotoListState.Loading -> {
                 Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .clickable {
-                            navController.navigate("detail/${image.id}")
-                        }
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Image(
-                        painter = rememberImagePainter(image.urls.small),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .heightIn(min = 180.dp, max = 300.dp)
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.BottomStart)
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f)),
-                                    startY = 0f,
-                                    endY = 300f
-                                )
-                            )
-                            .padding(8.dp)
-                    ) {
-                        Text(
-                            text = image.user.name,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        )
-                    }
+                    CircularProgressIndicator(color = Color.White)
                 }
             }
 
-            if (isLoading) {
-                item(span = { GridItemSpan(2) }) {
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        CircularProgressIndicator(
+            is PhotoListState.Error -> {
+                Box(modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ){
+                    Text(
+                        text = uiState.message,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            is PhotoListState.Success -> {
+                val images = uiState.photos
+
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 150.dp),
+                    state = gridState,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxSize()
+
+                ) {
+                    items(images.size) { index ->
+                        val image = images[index]
+                        Box(
                             modifier = Modifier
-                                .padding(24.dp)
-                                .size(36.dp)
-                                .align(Alignment.Center)
-                        )
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    detailViewModel.setPhoto(image)
+                                    navController.navigate("detail/{imageId}")
+                                }
+                        ){
+                            Image(
+                                painter = rememberImagePainter(data = image.urls.small),
+                                contentDescription = image.user.name,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height((150..300).random().dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .align(Alignment.BottomStart)
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colors = listOf(
+                                                Color.Transparent,
+                                                Color.Black.copy(alpha = 0.6f)
+                                            )
+                                        )
+                                    )
+                                    .padding(8.dp)
+                            ){
+                                Text(
+                                    text = image.user.name,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                    }
+
+                    if (viewModel.isLoading()){
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(color = Color.White)
+                            }
+                        }
                     }
                 }
             }
         }
     }
-}*/
+}

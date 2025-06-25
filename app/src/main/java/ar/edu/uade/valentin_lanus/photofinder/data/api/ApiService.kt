@@ -6,17 +6,11 @@ import ar.edu.uade.valentin_lanus.photofinder.data.model.Photo
 import ar.edu.uade.valentin_lanus.photofinder.data.model.SearchResponse
 
 interface ApiService {
-    @GET("photos/random")
-    suspend fun getRandomPhotos(
-        @Query("count") count: Int = 5,
-        @Query("client_id") clientId: String
-    ): List<Photo>
-
     @GET("search/photos")
     suspend fun searchPhotos(
         @Query("query") query: String,
-        @Query("per_page") perpage: Int = 10,
-        @Query("page") page: Int = 1,
+        @Query("per_page") perpage: Int,
+        @Query("page") page: Int,
         @Query("client_id") clientId: String
     ): SearchResponse
 }

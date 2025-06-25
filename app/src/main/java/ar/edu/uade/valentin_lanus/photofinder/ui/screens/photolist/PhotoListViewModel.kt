@@ -15,50 +15,78 @@ class PhotoListViewModel(
 
     private var currentQuery: String = ""
     private var currentPage = 1
-    private var currentImages = mutableListOf<Photo>()
+    private var totalPages = Int.MAX_VALUE
     private var isRequestInProgress = false
+    private var endReached = false
+
+    private val pageSize = 30
+
+    private var currentImages = mutableListOf<Photo>()
+    private val imageIds = mutableSetOf<String>()
+
+    private val fallbackQueries = listOf("naturaleza", "flore", "autos", "aviones", "animales", "paisajes")
+    private var lastRandomQuery = fallbackQueries.random()
 
     var uiState by mutableStateOf<PhotoListState>(PhotoListState.Loading)
         private set
 
+
+    fun isLoading(): Boolean = isRequestInProgress
+    fun isEndReached(): Boolean = endReached
+
     fun fetchInitialImages() {
         currentQuery = ""
         currentPage = 1
+        totalPages = Int.MAX_VALUE
+        endReached = false
         currentImages.clear()
+        imageIds.clear()
+        lastRandomQuery = fallbackQueries.random()
         loadImages()
     }
 
     fun searchImages(query: String) {
         currentQuery = query
         currentPage = 1
+        totalPages = Int.MAX_VALUE
+        endReached = false
         currentImages.clear()
+        imageIds.clear()
         loadImages()
     }
 
     fun loadImages() {
-        if (isRequestInProgress) return
+        if (isRequestInProgress || endReached || currentPage > totalPages) return
         isRequestInProgress = true
 
         viewModelScope.launch {
-            uiState = PhotoListState.Loading
-            try {
-                val newImages = if (currentQuery.isBlank()) {
-                    repository.getRandomPhotos(10)
-                } else {
-                    repository.searchPhotos(currentQuery).results
-                }
+            if(currentImages.isEmpty()){
+                uiState = PhotoListState.Loading
+            }
 
-                val uniqueImages = newImages.filterNot { new ->
-                    currentImages.any { existing -> existing.id == new.id }
+            try {
+                val queryToUse = if (currentQuery.isNotBlank()) currentQuery else lastRandomQuery
+
+                val response = repository.searchPhotos(
+                    query = queryToUse,
+                    page = currentPage,
+                    perPage = pageSize
+                )
+
+                val uniqueImages = response.results.filter { it.id !in imageIds }
+
+                if (uniqueImages.isEmpty() || currentPage >= response.total_pages) {
+                    endReached = true
                 }
 
                 currentImages.addAll(uniqueImages)
+                imageIds.addAll(uniqueImages.map { it.id })
 
-                if (uniqueImages.isNotEmpty() && currentQuery.isNotBlank()){
-                    currentPage++
-                }
+                totalPages = response.total_pages
+                currentPage++
 
                 uiState = PhotoListState.Success(currentImages)
+
             } catch (e: Exception) {
                 uiState = PhotoListState.Error("Error: ${e.localizedMessage}")
             }
