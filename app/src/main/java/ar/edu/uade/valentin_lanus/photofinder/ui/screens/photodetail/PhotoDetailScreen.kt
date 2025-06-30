@@ -20,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -42,6 +43,10 @@ fun PhotoDetailScreen(photo: Photo?, viewModel: PhotoDetailViewModel){
         return
     }
     val isLiked by viewModel.isLiked.collectAsState()
+
+    LaunchedEffect(photo?.id) {
+        photo?.let { viewModel.setPhoto(it) }
+    }
 
     Column(
         modifier = Modifier

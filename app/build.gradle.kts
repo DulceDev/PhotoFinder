@@ -67,6 +67,8 @@ dependencies {
     implementation(libs.androidx.room.common.jvm)
     implementation(libs.androidx.room.compiler)
     implementation(libs.androidx.room.runtime.android)
+    implementation(libs.hilt.android.gradle.plugin)
+    implementation(libs.androidx.hilt.common)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
