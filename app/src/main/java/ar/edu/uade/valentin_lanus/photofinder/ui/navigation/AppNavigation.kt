@@ -10,7 +10,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import ar.edu.uade.valentin_lanus.photofinder.Secrets
 import ar.edu.uade.valentin_lanus.photofinder.data.api.RetrofitInstance
-import ar.edu.uade.valentin_lanus.photofinder.data.local.AppDatabase
 import ar.edu.uade.valentin_lanus.photofinder.data.repository.PhotoRepositoryImpl
 import ar.edu.uade.valentin_lanus.photofinder.ui.screens.main.MainScreen
 import ar.edu.uade.valentin_lanus.photofinder.ui.screens.login.LoginScreen

@@ -32,7 +32,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import ar.edu.uade.valentin_lanus.photofinder.data.model.Photo
 import coil.compose.rememberImagePainter
 
