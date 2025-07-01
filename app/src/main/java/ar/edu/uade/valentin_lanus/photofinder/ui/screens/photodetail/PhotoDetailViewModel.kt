@@ -6,28 +6,35 @@ import ar.edu.uade.valentin_lanus.photofinder.data.local.LikedPhotoDao
 import ar.edu.uade.valentin_lanus.photofinder.data.local.toEntity
 import ar.edu.uade.valentin_lanus.photofinder.data.model.Photo
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 
-class PhotoDetailViewModel(private val dao: LikedPhotoDao) : ViewModel() {
+class PhotoDetailViewModel(
+    private val dao: LikedPhotoDao
+) : ViewModel() {
     private val _photo = MutableStateFlow<Photo?>(null)
-    val photo = _photo.asStateFlow()
+    val photo: StateFlow<Photo?> = _photo.asStateFlow()
 
-    val isLiked: StateFlow<Boolean> = _photo
-        .filterNotNull()
-        .flatMapLatest { dao.isLiked(it.id) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    private val _isLiked = MutableStateFlow(false)
+    val isLiked: StateFlow<Boolean> = _isLiked.asStateFlow()
 
-    fun setPhoto(photo: Photo) = _photo.tryEmit(photo)
+    fun setPhoto(photo: Photo) {
+        _photo.value = photo
+        viewModelScope.launch {
+            _isLiked.value = dao.isLiked(photo.id)
+        }
+    }
 
     fun toggleLike() = viewModelScope.launch {
         _photo.value?.let {
-            if (isLiked.value) dao.delete(it.id)
-            else dao.insert(it.toEntity())
+            if (isLiked.value) {
+                dao.delete(it.id)
+                _isLiked.value = false
+            } else {
+                dao.insert(it.toEntity())
+                _isLiked.value = true
+            }
         }
     }
 }

@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -49,19 +50,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import ar.edu.uade.valentin_lanus.photofinder.Secrets
-import ar.edu.uade.valentin_lanus.photofinder.data.api.RetrofitInstance
-import ar.edu.uade.valentin_lanus.photofinder.data.repository.PhotoRepositoryImpl
 import ar.edu.uade.valentin_lanus.photofinder.ui.screens.photodetail.PhotoDetailViewModel
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
 
 @Composable
 fun PhotoListScreen(
     navController: NavHostController,
     viewModel: PhotoListViewModel,
-    onLogout: () -> Unit,
     detailViewModel: PhotoDetailViewModel
 ){
     var searchQuery by remember { mutableStateOf("") }
@@ -94,7 +89,7 @@ fun PhotoListScreen(
             )
             .padding(16.dp)
     ){
-        // header con buscador y logout
+        // header con buscador y perfil
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -124,12 +119,14 @@ fun PhotoListScreen(
             )
 
             IconButton(
-                onClick = onLogout,
+                onClick = {
+                    navController.navigate("profile")
+                },
                 modifier = Modifier.padding(start = 8.dp)
-            ){
+            ) {
                 Icon(
-                    imageVector = Icons.Default.ExitToApp,
-                    contentDescription = "Cerrar Sesion",
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Perfil",
                     tint = Color.White
                 )
             }

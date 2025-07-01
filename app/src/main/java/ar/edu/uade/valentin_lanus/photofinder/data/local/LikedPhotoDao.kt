@@ -14,7 +14,7 @@ interface LikedPhotoDao {
     suspend fun getAllLikedPhotos(): List<PhotoEntity>
 
     @Query("SELECT EXISTS(SELECT 1 FROM liked_photos WHERE id = :photoId)")
-    suspend fun isLiked(photoId: String): kotlinx.coroutines.flow.Flow<Boolean>
+    suspend fun isLiked(photoId: String): Boolean
 
     @Query("DELETE FROM liked_photos WHERE id = :photoId")
     suspend fun delete(photoId: String)

@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.gms.google.services)
+    id("kotlin-kapt")
 }
 
 android {
@@ -40,6 +41,10 @@ android {
     }
 }
 
+configurations.all {
+    exclude(group = "com.intellij", module = "annotations")
+}
+
 dependencies {
 
     implementation(libs.androidx.core.ktx)
@@ -65,7 +70,7 @@ dependencies {
     implementation(libs.play.services.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.androidx.room.common.jvm)
-    implementation(libs.androidx.room.compiler)
+    kapt(libs.androidx.room.compiler)
     implementation(libs.androidx.room.runtime.android)
     implementation(libs.hilt.android.gradle.plugin)
     implementation(libs.androidx.hilt.common)
