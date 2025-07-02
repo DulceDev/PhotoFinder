@@ -11,5 +11,6 @@ data class PhotoEntity(
     val imageUrlRegular: String,
     val imageUrlFull: String,
     val description: String?,
-    val userName: String
+    val userName: String,
+    val likes: Int
 )

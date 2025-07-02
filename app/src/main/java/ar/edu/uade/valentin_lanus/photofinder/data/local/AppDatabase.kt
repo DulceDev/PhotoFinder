@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [PhotoEntity::class], version = 1)
+@Database(entities = [PhotoEntity::class], version = 2)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun likedPhotoDao(): LikedPhotoDao
 
@@ -18,8 +18,11 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "photo_finder_db"
-                ).build().also { INSTANCE = it }
+                ).fallbackToDestructiveMigration()
+                    .build()
+                    .also { INSTANCE = it }
             }
         }
     }
 }
+

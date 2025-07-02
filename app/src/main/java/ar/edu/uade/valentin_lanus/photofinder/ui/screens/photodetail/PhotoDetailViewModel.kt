@@ -21,8 +21,12 @@ class PhotoDetailViewModel(
     private val _isLiked = MutableStateFlow(false)
     val isLiked: StateFlow<Boolean> = _isLiked.asStateFlow()
 
+    private val _likeCount = MutableStateFlow(0)
+    val likeCount: StateFlow<Int> = _likeCount.asStateFlow()
+
     fun setPhoto(photo: Photo) {
         _photo.value = photo
+        _likeCount.value = photo.likes
         viewModelScope.launch {
             _isLiked.value = dao.isLiked(photo.id)
         }
@@ -30,12 +34,18 @@ class PhotoDetailViewModel(
 
     suspend fun toggleLike(): Boolean {
         val currentPhoto = _photo.value ?: return false
-
         val likedNow = !_isLiked.value
+
+        val updatedLikes = if (likedNow) _likeCount.value + 1 else (_likeCount.value - 1).coerceAtLeast(0)
+
+        val updatedPhoto = currentPhoto.copy(likes = updatedLikes)
+        _photo.value = updatedPhoto
+        _likeCount.value = updatedLikes
+
         if (likedNow) {
-            dao.insert(currentPhoto.toEntity())
+            dao.insert(updatedPhoto.toEntity())
         } else {
-            dao.delete(currentPhoto.id)
+            dao.delete(updatedPhoto.id)
         }
 
         _isLiked.value = likedNow

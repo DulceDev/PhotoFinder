@@ -10,13 +10,14 @@ fun Photo.toEntity(): PhotoEntity = PhotoEntity(
     imageUrlRegular = urls.regular,
     imageUrlFull = urls.full,
     description = description,
-    userName = user.name
+    userName = user.name,
+    likes = likes
 )
 
 fun PhotoEntity.toPhoto(): Photo = Photo(
     id = id,
     description = description,
-    likes = 0,
+    likes = likes,
     urls = Urls(
         small = imageUrlSmall,
         regular = imageUrlRegular,
@@ -24,3 +25,4 @@ fun PhotoEntity.toPhoto(): Photo = Photo(
     ),
     user = User(name = userName)
 )
+
