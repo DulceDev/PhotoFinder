@@ -20,9 +20,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,21 +32,24 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import ar.edu.uade.valentin_lanus.photofinder.data.model.Photo
+import ar.edu.uade.valentin_lanus.photofinder.ui.screens.profile.ProfileViewModel
 import coil.compose.rememberImagePainter
+import kotlinx.coroutines.launch
 
 @Composable
-fun PhotoDetailScreen(photo: Photo?, viewModel: PhotoDetailViewModel){
+fun PhotoDetailScreen(
+    photo: Photo?,
+    detailViewModel: PhotoDetailViewModel,
+    profileViewModel: ProfileViewModel,
+    navController: NavHostController
+    ){
     if (photo == null) {
         Text("Foto no encontrada", modifier = Modifier.padding(16.dp))
         return
     }
-    val isLiked by viewModel.isLiked.collectAsState()
-
-    LaunchedEffect(photo?.id) {
-        photo?.let { viewModel.setPhoto(it) }
-    }
+    val isLiked by detailViewModel.isLiked.collectAsState()
 
     Column(
         modifier = Modifier
@@ -65,7 +68,7 @@ fun PhotoDetailScreen(photo: Photo?, viewModel: PhotoDetailViewModel){
                 .clip(RoundedCornerShape(20.dp))
         ){
             Image(
-                painter = rememberImagePainter(photo!!.urls.small),
+                painter = rememberImagePainter(photo.urls.small),
                 contentDescription = "Imagen detallada",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
@@ -82,7 +85,7 @@ fun PhotoDetailScreen(photo: Photo?, viewModel: PhotoDetailViewModel){
                     .padding(12.dp)
             ){
                 Text(
-                    text = "Por: ${photo!!.user.name}",
+                    text = "Por: ${photo.user.name}",
                     color = Color.White,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
@@ -100,7 +103,7 @@ fun PhotoDetailScreen(photo: Photo?, viewModel: PhotoDetailViewModel){
                 .padding(16.dp)
         ) {
             Text(
-                text = photo!!.description ?: "Descripción no disponible",
+                text = photo.description ?: "Descripción no disponible",
                 style = MaterialTheme.typography.bodyLarge,
                 fontSize = 16.sp
             )
@@ -108,15 +111,28 @@ fun PhotoDetailScreen(photo: Photo?, viewModel: PhotoDetailViewModel){
             Spacer(modifier = Modifier.height(12.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically){
+                val scope = rememberCoroutineScope()
+
                 Icon(
                     imageVector = Icons.Default.Favorite,
                     contentDescription = "Likes",
                     tint = if (isLiked) Color.Red else Color.Gray,
-                    modifier = Modifier.clickable { viewModel.toggleLike() }
+                    modifier = Modifier.clickable {
+                        scope.launch {
+                            val likedNow = detailViewModel.toggleLike()
+                            if (likedNow) {
+                                profileViewModel.addPhoto(photo)
+                            } else {
+                                profileViewModel.removePhoto(photo)
+                            }
+                        }
+                    }
                 )
+
                 Spacer(modifier = Modifier.width(6.dp))
+
                 Text(
-                    text = "${photo!!.likes} Me gustas",
+                    text = "${photo.likes} Me gustas",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold
                 )

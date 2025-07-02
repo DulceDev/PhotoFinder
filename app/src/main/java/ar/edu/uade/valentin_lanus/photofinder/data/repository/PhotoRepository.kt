@@ -5,4 +5,6 @@ import ar.edu.uade.valentin_lanus.photofinder.data.model.SearchResponse
 
 interface PhotoRepository {
     suspend fun searchPhotos(query: String, page: Int, perPage: Int): SearchResponse
+
+    suspend fun getLikedPhotos(): List<Photo>
 }

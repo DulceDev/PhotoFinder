@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ar.edu.uade.valentin_lanus.photofinder.data.local.LikedPhotoDao
 import ar.edu.uade.valentin_lanus.photofinder.data.local.toEntity
+import ar.edu.uade.valentin_lanus.photofinder.data.local.toPhoto
 import ar.edu.uade.valentin_lanus.photofinder.data.model.Photo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,6 +14,7 @@ import kotlinx.coroutines.launch
 class PhotoDetailViewModel(
     private val dao: LikedPhotoDao
 ) : ViewModel() {
+
     private val _photo = MutableStateFlow<Photo?>(null)
     val photo: StateFlow<Photo?> = _photo.asStateFlow()
 
@@ -26,14 +28,31 @@ class PhotoDetailViewModel(
         }
     }
 
-    fun toggleLike() = viewModelScope.launch {
-        _photo.value?.let {
-            if (isLiked.value) {
-                dao.delete(it.id)
-                _isLiked.value = false
+    suspend fun toggleLike(): Boolean {
+        val currentPhoto = _photo.value ?: return false
+
+        val likedNow = !_isLiked.value
+        if (likedNow) {
+            dao.insert(currentPhoto.toEntity())
+        } else {
+            dao.delete(currentPhoto.id)
+        }
+
+        _isLiked.value = likedNow
+        return likedNow
+    }
+
+    suspend fun loadPhotoById(photoId: String, sources: List<Photo>) {
+        val fromMemory = sources.find { it.id == photoId }
+        if (fromMemory != null) {
+            setPhoto(fromMemory)
+        } else {
+            val fromDb = dao.getById(photoId)
+            if (fromDb != null) {
+                setPhoto(fromDb.toPhoto())
             } else {
-                dao.insert(it.toEntity())
-                _isLiked.value = true
+                _photo.value = null
+                _isLiked.value = false
             }
         }
     }

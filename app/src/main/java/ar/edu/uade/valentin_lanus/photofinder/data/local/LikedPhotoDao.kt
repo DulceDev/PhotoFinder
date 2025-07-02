@@ -18,4 +18,7 @@ interface LikedPhotoDao {
 
     @Query("DELETE FROM liked_photos WHERE id = :photoId")
     suspend fun delete(photoId: String)
+
+    @Query("SELECT * FROM liked_photos WHERE id = :photoId")
+    suspend fun getById(photoId: String): PhotoEntity?
 }

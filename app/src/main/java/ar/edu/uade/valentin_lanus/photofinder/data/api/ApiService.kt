@@ -2,7 +2,6 @@ package ar.edu.uade.valentin_lanus.photofinder.data.api
 
 import retrofit2.http.GET
 import retrofit2.http.Query
-import ar.edu.uade.valentin_lanus.photofinder.data.model.Photo
 import ar.edu.uade.valentin_lanus.photofinder.data.model.SearchResponse
 
 interface ApiService {
